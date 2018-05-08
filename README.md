@@ -37,12 +37,12 @@ Most ItemReader/Writers are single threaded (to support restart).
 * It is not thread safe and cannot be used in a multithreaded job as is unless decorated with SynchronizedItemStreamReader (locking overhead).
 * It keeps result set open and requires active db connection which may not be suitable for long running jobs.
 * It fetches one record at a time from db, which may be round trip overhead in some jobs.
-* But it supports restart by saving last rownum in execution context in batch schema.
+* It supports restart by saving last rownum in execution context in batch schema.
 
 ## JdbcPagingItemReader
 * It is thread safe. So job can be multithreaded
-* It does not support restart by default. To support restart, need to keep a column e.g. processed = true/false in source table and read data conditionally. Additionally update to processed column is also required.
-* Since it does not support restart, it makes no sense to save its state in batch schema therefore `.saveState(false)`
+* It supports only in single threaded mode. To support restart in multithreaded mode, need to keep a column e.g. processed = true/false in source table and read data conditionally. Additionally update to processed column is also required.
+* In multithreaded mode, since it does not support restart, it makes no sense to save its state in batch schema therefore `.saveState(false)`
 * It may require more app memory since it brings the full page (or multiple pages in case of multithreaded job).
 * The `.pageSize(10)` and `chunk(10)` should be same.
 
