@@ -1,0 +1,1 @@
+create table IF NOT EXISTS quotes (id integer not null, processed boolean, quote varchar(2000), primary key(id));
