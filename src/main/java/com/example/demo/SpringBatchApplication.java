@@ -52,8 +52,8 @@ public class SpringBatchApplication implements CommandLineRunner {
 		Long count = jdbcTemplate.queryForObject("select count(*) from quotes", Long.class);
 		if (count == 0) {
 			log.info("init db");
-			jdbcTemplate.batchUpdate("merge into quotes (id, processed) values (?, false)",
-					IntStream.range(0, 100000).boxed().map(i -> new Object[] { i }).collect(Collectors.toList()));
+			jdbcTemplate.batchUpdate("insert into quotes (id, processed, version) values (?, false, 0)",
+					IntStream.range(0, 1000).boxed().map(i -> new Object[] { i }).collect(Collectors.toList()));
 		}
 
 		// TO RESTART EXISTING JOB EXECUTION

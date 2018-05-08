@@ -113,7 +113,7 @@ public class BatchConfiguration {
 			@Override
 			public void write(List<? extends Quote> quotes) throws Exception {
 				log.info("writing: {}", quotes.size());
-				jdbcTemplate.batchUpdate("update quotes set quote = ?, processed = true where id = ?", quotes.stream()
+				jdbcTemplate.batchUpdate("update quotes set quote = ?, processed = true, version = version + 1 where id = ?", quotes.stream()
 						.map(q -> new Object[] { q.getQuote(), q.getId() }).collect(Collectors.toList()));
 			}
 		};
