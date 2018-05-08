@@ -6,16 +6,19 @@ import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.configuration.JobFactory;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.core.Ordered;
 
-@EnableBatchProcessing
 @SpringBootApplication
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class SpringBatchApplication implements CommandLineRunner {
@@ -24,6 +27,21 @@ public class SpringBatchApplication implements CommandLineRunner {
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
 
+	@Autowired
+	private JobOperator jobOperator;
+
+	@Autowired
+	private ApplicationContext context;
+
+	@Autowired
+	JobFactory jobFactory;
+
+	@Autowired
+	JobRegistry jobRegistry;
+
+	@Autowired
+	Job job1;
+
 	public static void main(String[] args) throws IOException {
 		SpringApplication.run(SpringBatchApplication.class, args);
 		System.in.read();
@@ -31,11 +49,15 @@ public class SpringBatchApplication implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		//log.info("init db");
-		//jdbcTemplate.batchUpdate("merge into quotes (id, processed) values (?, false)",
-		//		IntStream.range(0, 100000).boxed().map(i -> new Object[] { i }).collect(Collectors.toList()));
+		Long count = jdbcTemplate.queryForObject("select count(*) from quotes", Long.class);
+		if (count == 0) {
+			log.info("init db");
+			jdbcTemplate.batchUpdate("merge into quotes (id, processed) values (?, false)",
+					IntStream.range(0, 100000).boxed().map(i -> new Object[] { i }).collect(Collectors.toList()));
+		}
 
-		// log.info(jdbcTemplate.query("select * from quotes",
-		// Quote.rowMapper()).toString());
+		// TO RESTART EXISTING JOB EXECUTION
+		// jobRegistry.register(jobFactory);
+		// jobOperator.restart(3);
 	}
 }

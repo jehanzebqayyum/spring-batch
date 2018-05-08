@@ -9,8 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
@@ -22,16 +24,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
+@EnableBatchProcessing
+@Import(AdditonalBatchConfiguration.class)
 public class BatchConfiguration {
 	private static final Logger log = LoggerFactory.getLogger(BatchConfiguration.class);
 
@@ -53,12 +59,22 @@ public class BatchConfiguration {
 	public Step step1(ItemReader<Quote> reader, ItemProcessor<Quote, Quote> processor, ItemWriter<Quote> writer,
 			TaskExecutor taskExecutor) {
 		return stepBuilderFactory.get("step1").<Quote, Quote>chunk(10).reader(reader).processor(processor)
-				.writer(writer).taskExecutor(taskExecutor).throttleLimit(8).build();
+				.writer(writer).taskExecutor(taskExecutor).throttleLimit(4).build();
 	}
 
 	@Bean
 	public Job job(Step step1) {
 		return jobBuilderFactory.get("job1").start(step1).build();
+	}
+
+	@Bean
+	protected JobRepositoryFactoryBean jobRepositoryFactoryBean(PlatformTransactionManager transactionManager)
+			throws Exception {
+		JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
+		factory.setDataSource(dataSource);
+		factory.setDatabaseType("h2");
+		factory.setTransactionManager(transactionManager);
+		return factory;
 	}
 
 	/*
@@ -73,7 +89,9 @@ public class BatchConfiguration {
 	@Bean
 	public JdbcPagingItemReader<Quote> reader(DataSource dataSource, PagingQueryProvider queryProvider) {
 		return new JdbcPagingItemReaderBuilder<Quote>().name("quoteReader").dataSource(dataSource)
-				.queryProvider(queryProvider).saveState(false).rowMapper(Quote.rowMapper()).pageSize(10).build();
+				.queryProvider(queryProvider)
+				.saveState(true)
+				.rowMapper(Quote.rowMapper()).pageSize(10).build();
 	}
 
 	@Bean
@@ -82,7 +100,7 @@ public class BatchConfiguration {
 		provider.setDataSource(dataSource);
 		provider.setSelectClause("select *");
 		provider.setFromClause("from quotes");
-		provider.setWhereClause("where processed=false");
+		//provider.setWhereClause("where processed=false");
 		provider.setSortKey("id");
 
 		return provider.getObject();
@@ -128,10 +146,10 @@ public class BatchConfiguration {
 	@Bean
 	public TaskExecutor taskExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-		executor.setCorePoolSize(10);
+		executor.setCorePoolSize(4);
 		executor.setThreadNamePrefix("default_task_executor");
 		executor.initialize();
 		return executor;
-
 	}
+
 }
