@@ -100,7 +100,7 @@ public class BatchConfiguration {
 		provider.setDataSource(dataSource);
 		provider.setSelectClause("select *");
 		provider.setFromClause("from quotes");
-		//provider.setWhereClause("where processed=false");
+		provider.setWhereClause("where processed=false");
 		provider.setSortKey("id");
 
 		return provider.getObject();
