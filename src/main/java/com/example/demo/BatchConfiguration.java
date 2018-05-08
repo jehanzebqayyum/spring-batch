@@ -90,7 +90,7 @@ public class BatchConfiguration {
 	public JdbcPagingItemReader<Quote> reader(DataSource dataSource, PagingQueryProvider queryProvider) {
 		return new JdbcPagingItemReaderBuilder<Quote>().name("quoteReader").dataSource(dataSource)
 				.queryProvider(queryProvider)
-				.saveState(true)
+				.saveState(false)
 				.rowMapper(Quote.rowMapper()).pageSize(10).build();
 	}
 
